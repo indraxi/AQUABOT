@@ -4,7 +4,7 @@ from rapidfuzz import fuzz
 
 app = Flask(__name__)
 
-BOT_TOKEN = "your_telegram_bot_token"
+BOT_TOKEN = "8103765408:AAFxvE-vmxcbx0AG8vo4_anSDPNAL7J4ncw"
 
 # ✅ Step 1: Your smart knowledge base (dictionary)
 WATER_TIPS = {
