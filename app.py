@@ -1,57 +1,50 @@
-import os
-import requests
 from flask import Flask, request
+import requests
+import os
 from ibm_watson import NaturalLanguageUnderstandingV1
-from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from ibm_watson.natural_language_understanding_v1 import Features, KeywordsOptions
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
 app = Flask(__name__)
 
-# Load environment variables
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-IBM_API_KEY = os.environ.get("IBM_API_KEY")
-IBM_NLU_URL = os.environ.get("IBM_NLU_URL")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+NLU_API_KEY = os.getenv("NLU_API_KEY")
+NLU_URL = os.getenv("NLU_URL")
 
-# Watson NLU setup
-authenticator = IAMAuthenticator(IBM_API_KEY)
+authenticator = IAMAuthenticator(NLU_API_KEY)
 nlu = NaturalLanguageUnderstandingV1(
     version='2021-08-01',
     authenticator=authenticator
 )
-nlu.set_service_url(IBM_NLU_URL)
+nlu.set_service_url(NLU_URL)
 
-# Static water-saving tips
 WATER_TIPS = {
-    'water': 'Turn off taps while brushing and fix leaks immediately.',
-    'leak': 'Fix leaking pipes and toilets to conserve water.',
-    'rain': 'Harvest rainwater using rooftop systems.',
-    'toilet': 'Use dual-flush toilets to save water.',
-    'laundry': 'Run full loads in your washing machine.'
+    "leak": "Fix leaking taps and pipes to save water.",
+    "toilet": "Use dual flush toilets to reduce water use.",
+    "shower": "Take shorter showers to conserve water.",
+    "sanitation": "Ensure proper sanitation to avoid waterborne diseases."
 }
 
 def smart_reply(message):
-    print("Analyzing with NLU:", message)
     try:
         response = nlu.analyze(
             text=message,
             features=Features(keywords=KeywordsOptions(limit=3))
         ).get_result()
-        print("NLU Response:", response)
 
         for kw in response.get('keywords', []):
             keyword = kw['text'].lower()
             for key in WATER_TIPS:
                 if key in keyword:
                     return WATER_TIPS[key]
-    except Exception as e:
-        print("NLU Error:", str(e))
+    except:
+        pass
 
     return "Sorry, I didn't get that. Try asking about water saving or sanitation tips."
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
-    print("Received data:", data)
 
     if 'message' in data:
         chat_id = data['message']['chat']['id']
@@ -59,17 +52,13 @@ def webhook():
 
         reply = smart_reply(text)
 
-        response = requests.post(
+        requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
             json={'chat_id': chat_id, 'text': reply}
         )
-        print("Telegram response:", response.text)
     return 'ok'
 
 @app.route('/health')
 def health():
     return "I'm alive", 200
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
 
