@@ -1,34 +1,52 @@
 from flask import Flask, request
-import telegram
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
+import requests
+from rapidfuzz import fuzz
 
 app = Flask(__name__)
-bot = telegram.Bot(token="8103765408:AAFxvE-vmxcbx0AG8vo4_anSDPNAL7J4ncw")
 
-faq = {
-    "how to save water": "Fix leaks, use low-flow taps, turn off tap while brushing.",
-    "rainwater harvesting": "It is collecting and storing rainwater for reuse.",
-    "importance of sanitation": "Sanitation prevents disease and protects water sources.",
+BOT_TOKEN = "your_telegram_bot_token"
+
+# ✅ Step 1: Your smart knowledge base (dictionary)
+WATER_TIPS = {
+    "save water": "Turn off taps when not in use. Fix leaks. Use low-flow fixtures.",
+    "reduce water usage": "Take shorter showers. Don't let water run while brushing teeth.",
+    "reuse water": "Collect rainwater. Use leftover RO water for cleaning or gardening.",
+    "importance of sanitation": "Good sanitation prevents disease and promotes hygiene.",
+    "toilet hygiene": "Always flush. Keep the toilet clean. Wash hands with soap.",
+    "conserve water": "Water plants early morning. Fix leaking taps and pipes.",
+    "clean water": "Use water filters. Boil water before drinking. Avoid water pollution.",
 }
 
-# Handler function
-def handle_message(update, context):
-    text = update.message.text.lower()
-    for key in faq:
-        if key in text:
-            update.message.reply_text(faq[key])
-            return
-    update.message.reply_text("Sorry, I don't know that yet. Try asking about water-saving tips or sanitation.")
+# ✅ Step 2: Smart reply logic function
+def smart_reply(user_message):
+    best_score = 0
+    best_reply = "Sorry, I didn’t understand that. Try asking about water saving or sanitation tips."
 
-@app.route(f"/webhook/{bot.token}", methods=["POST"])
+    for keyword, reply in WATER_TIPS.items():
+        score = fuzz.ratio(user_message.lower(), keyword.lower())
+        if score > best_score and score > 60:
+            best_score = score
+            best_reply = reply
+
+    return best_reply
+
+# ✅ Step 3: Webhook route
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
-    return "ok"
+    data = request.get_json()
 
-# Set up dispatcher
-dispatcher = Dispatcher(bot, None, workers=0)
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    if 'message' in data:
+        chat_id = data['message']['chat']['id']
+        text = data['message'].get('text', '')
 
-if __name__ == "__main__":
-    app.run(debug=True)
+        reply = smart_reply(text)
+
+        send_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        requests.post(send_url, json={'chat_id': chat_id, 'text': reply})
+
+    return 'ok'
+
+# ✅ (Optional) Keep-alive route for Render/UptimeRobot
+@app.route('/health')
+def health():
+    return "I'm alive!", 200
