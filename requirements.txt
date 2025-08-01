@@ -1,2 +1,4 @@
-flask
+Flask
 python-telegram-bot
+rapidfuzz
+gunicorn
