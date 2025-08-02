@@ -32,13 +32,18 @@ def smart_reply(message):
             features=Features(keywords=KeywordsOptions(limit=3))
         ).get_result()
 
+        print(f"NLU response: {response}")  # Log NLU analysis result
+
         for kw in response.get('keywords', []):
             keyword = kw['text'].lower()
+
+            print(f"Detected keyword: {keyword}")  # Log keyword
+
             for key in WATER_TIPS:
                 if key in keyword:
                     return WATER_TIPS[key]
-    except:
-        pass
+    except Exception as e:
+        print(f"NLU Error: {e}")  # Log error if any
 
     return "Sorry, I didn't get that. Try asking about water saving or sanitation tips."
 
