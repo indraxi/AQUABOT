@@ -5,3 +5,8 @@ __pycache__/
 *.pyd
 *.log
 venv/
+.git
+.gitignore
+Dockerfile
+Procfile
+
