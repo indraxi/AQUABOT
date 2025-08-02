@@ -50,7 +50,11 @@ def webhook():
         chat_id = data['message']['chat']['id']
         text = data['message'].get('text', '')
 
+        print("📩 Incoming message:", text)  # <-- LOG HERE
+
         reply = smart_reply(text)
+
+        print("💬 Replying with:", reply)     # <-- LOG HERE
 
         requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
